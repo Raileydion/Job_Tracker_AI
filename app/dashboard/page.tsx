@@ -1,8 +1,12 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
+import DashboardSidebar from "@/components/DashboardSidebar";
+import DashboardTopbar from "@/components/DashboardTopbar";
+import { LoadSpinner, Avatar } from "@/components/shared/UI";
+import { STATUS } from "@/lib/theme";
 
 type Job = {
   id: string;
@@ -10,63 +14,12 @@ type Job = {
   role: string;
   status: "Applied" | "Interview" | "Offer" | "Rejected";
   location?: string;
+  job_description?: string;
   created_at?: string;
-};
-
-const STATUS = {
-  Applied:   { color: "#a78bfa", bg: "rgba(167,139,250,0.1)",  border: "rgba(167,139,250,0.25)", dot: "#7c3aed", glow: "rgba(167,139,250,0.2)"  },
-  Interview: { color: "#fbbf24", bg: "rgba(251,191,36,0.1)",   border: "rgba(251,191,36,0.25)",  dot: "#d97706", glow: "rgba(251,191,36,0.2)"   },
-  Offer:     { color: "#34d399", bg: "rgba(52,211,153,0.1)",   border: "rgba(52,211,153,0.25)",  dot: "#059669", glow: "rgba(52,211,153,0.2)"   },
-  Rejected:  { color: "#6b7280", bg: "rgba(107,114,128,0.08)", border: "rgba(107,114,128,0.2)",  dot: "#374151", glow: "rgba(107,114,128,0.1)"  },
-};
-
-const CHAR_COLORS: Record<number, string> = {
-  0: "#f87171", 1: "#fb923c", 2: "#fbbf24", 3: "#a3e635",
-  4: "#34d399", 5: "#22d3ee", 6: "#818cf8", 7: "#e879f9",
-};
-
-function getCharColor(char: string) {
-  return CHAR_COLORS[char.toLowerCase().charCodeAt(0) % 8];
-}
-
-function Avatar({ name, size = 38 }: { name: string; size?: number }) {
-  const col = getCharColor(name[0] || "a");
-  return (
-    <div style={{
-      width: size, height: size, borderRadius: size * 0.28, flexShrink: 0,
-      background: `${col}14`, border: `1.5px solid ${col}38`,
-      display: "flex", alignItems: "center", justifyContent: "center",
-      fontSize: size * 0.38, fontWeight: 600, color: col,
-      letterSpacing: "-0.02em", fontFamily: "'Outfit', sans-serif",
-    }}>
-      {name[0].toUpperCase()}
-    </div>
-  );
-}
-
-function LoadSpinner({ color = "#c9a84c", size = 16 }: { color?: string; size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none"
-      style={{ animation: "dashSpin 0.75s linear infinite" }}>
-      <circle cx="8" cy="8" r="6" stroke={`${color}30`} strokeWidth="2.5" />
-      <path d="M8 2a6 6 0 016 6" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-const NAV = [
-  { id: "Dashboard", svg: <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="1.5" width="5" height="5" rx="1.2" stroke="currentColor" strokeWidth="1.4"/><rect x="8.5" y="1.5" width="5" height="5" rx="1.2" stroke="currentColor" strokeWidth="1.4"/><rect x="1.5" y="8.5" width="5" height="5" rx="1.2" stroke="currentColor" strokeWidth="1.4"/><rect x="8.5" y="8.5" width="5" height="5" rx="1.2" stroke="currentColor" strokeWidth="1.4"/></svg> },
-  { id: "Jobs",      svg: <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="4" width="12" height="9.5" rx="1.5" stroke="currentColor" strokeWidth="1.4"/><path d="M5 4V3A1.5 1.5 0 016.5 1.5h2A1.5 1.5 0 0110 3v1" stroke="currentColor" strokeWidth="1.4"/><path d="M1.5 8h12" stroke="currentColor" strokeWidth="1.4"/></svg> },
-  { id: "Analytics", svg: <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2 12l3.5-5 3 2.5 3.5-6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 2v11h11" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg> },
-  { id: "Settings",  svg: <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="2.3" stroke="currentColor" strokeWidth="1.4"/><path d="M7.5 1.5v1.3M7.5 12.2v1.3M1.5 7.5h1.3M12.2 7.5h1.3M3.4 3.4l.9.9M10.7 10.7l.9.9M3.4 11.6l.9-.9M10.7 4.3l.9-.9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg> },
-];
-
-export default function Dashboard() {
+};export default function Dashboard() {
   const router = useRouter();
-  const pathname = usePathname();
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState("");
-  const [activeNav, setActiveNav] = useState("Dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [showModal, setShowModal] = useState(false);
@@ -80,7 +33,11 @@ export default function Dashboard() {
   const [company, setCompany] = useState("");
   const [role, setRole] = useState("");
   const [location, setLocation] = useState("");
+  const [jobDescription, setJobDescription] = useState("");
   const [status, setStatus] = useState<Job["status"]>("Applied");
+
+  const [aiResult, setAiResult] = useState<string | null>(null);
+  const [aiLoadingId, setAiLoadingId] = useState<string | null>(null);
   
 
   useEffect(() => { setMounted(true); }, []);
@@ -99,8 +56,8 @@ export default function Dashboard() {
     init();
   }, [router]);
 
-  const resetForm = () => { setCompany(""); setRole(""); setLocation(""); setStatus("Applied"); setEditJob(null); };
-  const openEdit = (job: Job) => { setEditJob(job); setCompany(job.company); setRole(job.role); setLocation(job.location || ""); setStatus(job.status); setShowModal(true); };
+  const resetForm = () => { setCompany(""); setRole(""); setLocation("");  setJobDescription(""); setStatus("Applied"); setEditJob(null); };
+  const openEdit = (job: Job) => { setEditJob(job); setCompany(job.company); setRole(job.role); setLocation(job.location || ""); setJobDescription(job.job_description || ""); setStatus(job.status); setShowModal(true); };
 
   // ✅ ADD / EDIT JOB
   const handleSave = async () => {
@@ -110,14 +67,45 @@ export default function Dashboard() {
     const user = sd.session?.user;
     if (!user) return;
     if (editJob) {
-      const { data, error } = await supabase.from("jobs").update({ company, role, status, location }).eq("id", editJob.id).select();
+      const { data, error } = await supabase.from("jobs").update({ company, role, status, location, job_description: jobDescription }).eq("id", editJob.id).select();
       if (!error && data) setJobs(p => p.map(j => j.id === editJob.id ? data[0] : j));
     } else {
-      const { data, error } = await supabase.from("jobs").insert([{ user_id: user.id, company, role, status, location }]).select();
+      const { data, error } = await supabase.from("jobs").insert([{ user_id: user.id, company, role, status, location, job_description: jobDescription }]).select();
       if (!error && data) setJobs(p => [data[0], ...p]);
     }
     setAddLoading(false); resetForm(); setShowModal(false);
   };
+
+const handleAnalyze = async (job: Job) => {
+  if (!job.job_description) {
+    alert("No job description added.");
+    return;
+  }
+
+  setAiLoadingId(job.id);
+
+  try {
+    const res = await fetch("/api/ai/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ description: job.job_description }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert("AI failed.");
+      return;
+    }
+
+    setAiResult(data.result); // 🔥 THIS replaces alert
+
+  } catch {
+    alert("Something went wrong.");
+  } finally {
+    setAiLoadingId(null);
+  }
+};
 
   // ✅ DELETE JOB
   const handleDelete = async (id: string) => {
@@ -128,14 +116,6 @@ export default function Dashboard() {
   };
 
   const handleLogout = async () => { await supabase.auth.signOut(); router.push("/login"); };
-
-  const filtered = filterStatus === "All" ? jobs : jobs.filter(j => j.status === filterStatus);
-  const stats = [
-    { label: "Applied",   value: jobs.filter(j => j.status === "Applied").length,   icon: "📨", trend: "+2" },
-    { label: "Interview", value: jobs.filter(j => j.status === "Interview").length,  icon: "🎤", trend: "+1" },
-    { label: "Offers",    value: jobs.filter(j => j.status === "Offer").length,      icon: "🏆", trend: "Active" },
-    { label: "Total",     value: jobs.length,                                         icon: "📋", trend: "All time" },
-  ];
 
   const bg     = dark ? "#0c0b0a" : "#f4f2ef";
   const bgS    = dark ? "#0f0e0d" : "#ede9e4";
@@ -152,7 +132,16 @@ export default function Dashboard() {
   const inBg   = dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)";
   const inBgF  = dark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
   const rowH   = dark ? "rgba(255,255,255,0.025)" : "rgba(0,0,0,0.025)";
-  const glowH  = dark ? "0 0 0 1px rgba(201,168,76,0.2)" : "0 0 0 1px rgba(154,115,24,0.2)";
+
+  const filtered = filterStatus === "All" ? jobs : jobs.filter(j => j.status === filterStatus);
+  const inputSt: React.CSSProperties = { width: "100%", padding: "11px 14px", background: inBg, border: `1px solid ${brd}`, borderRadius: 10, color: tx, fontSize: 13.5, outline: "none", fontFamily: "'Outfit', sans-serif", transition: "border-color 0.2s, box-shadow 0.2s, background 0.2s" };
+
+  const stats = [
+    { label: "Applied",   value: jobs.filter(j => j.status === "Applied").length,   icon: "📨", trend: "+2" },
+    { label: "Interview", value: jobs.filter(j => j.status === "Interview").length,  icon: "🎤", trend: "+1" },
+    { label: "Offers",    value: jobs.filter(j => j.status === "Offer").length,      icon: "🏆", trend: "Active" },
+    { label: "Total",     value: jobs.length,                                         icon: "📋", trend: "All time" },
+  ];
 
   if (!mounted || loading) return (
     <div style={{ minHeight: "100vh", background: bg, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16, fontFamily: "'Outfit', sans-serif" }}>
@@ -161,9 +150,6 @@ export default function Dashboard() {
       <span style={{ color: txM, fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase" }}>Preparing workspace</span>
     </div>
   );
-
-  const initials = userEmail.split("@")[0].slice(0, 2).toUpperCase();
-  const inputSt: React.CSSProperties = { width: "100%", padding: "11px 14px", background: inBg, border: `1px solid ${brd}`, borderRadius: 10, color: tx, fontSize: 13.5, outline: "none", fontFamily: "'Outfit', sans-serif", transition: "border-color 0.2s, box-shadow 0.2s, background 0.2s" };
 
   return (
     <>
@@ -218,201 +204,42 @@ export default function Dashboard() {
         )}
 
         {/* ════════════════ SIDEBAR ════════════════ */}
-        {/* Desktop: sticky 225px wide in flex row. Mobile: 0-width, inner is fixed overlay */}
-        <aside style={{
-          width: 0, flexShrink: 0,
-          position: "relative",
-          zIndex: 30,
-        }} className="sidebar-aside">
-          {/* Mobile slide-in override */}
-          <style>{`
-            @media(min-width:1024px){
-              .sidebar-aside{ width: 225px !important; }
-              .sidebar-el-inner{
-                position:sticky;top:0;height:100vh;width:225px;
-                background:${bgS};border-right:1px solid ${brd};
-                transform:none;flex-shrink:0;
-                display:flex;flex-direction:column;
-              }
-            }
-            @media(max-width:1023px){
-              .sidebar-el-inner{
-                position:fixed!important;top:0;left:0;height:100vh!important;width:225px;
-                transform:${sidebarOpen ? "translateX(0)" : "translateX(-100%)"};
-                transition:transform 0.3s cubic-bezier(0.16,1,0.3,1);
-                z-index:30;
-                background:${bgS};
-                border-right:1px solid ${brd};
-                display:flex;flex-direction:column;
-              }
-            }
-          `}</style>
-          <div className="sidebar-el-inner" style={{ display: "flex", flexDirection: "column" }}>
-
-          {/* Gold accent line */}
-          <div style={{ position: "absolute", left: 0, top: "15%", bottom: "15%", width: 2, borderRadius: 2 }} className="sidebar-accent" />
-
-          {/* Logo */}
-          <div style={{ padding: "22px 20px 18px", borderBottom: `1px solid ${brdSub}` }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{
-                width: 32, height: 32, borderRadius: 10,
-                background: `linear-gradient(135deg, ${gold}, ${dark ? "#8b6914" : "#c9a84c"})`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                boxShadow: `0 4px 16px ${goldM}`,
-              }}>
-                <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-                  <path d="M2.5 4h10M2.5 7.5h7M2.5 11h4.5" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
-                </svg>
-              </div>
-              <div>
-                <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 17, fontWeight: 500, color: tx, letterSpacing: "0.02em", lineHeight: 1 }}>Trackr</p>
-                <p style={{ fontSize: 9, color: txM, letterSpacing: "0.15em", textTransform: "uppercase", marginTop: 2 }}>Job Intelligence</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Nav */}
-          <nav style={{ flex: 1, padding: "14px 10px", display: "flex", flexDirection: "column", gap: 2 }}>
-            <p style={{ color: txF, fontSize: 9, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.14em", padding: "6px 10px 8px" }}>Navigation</p>
-            {NAV.map(({ id, svg }) => {
-              const route = `/${id.toLowerCase() === "dashboard" ? "dashboard" : id.toLowerCase()}`;
-              const active = pathname === route;
-              return (
-                <button key={id} className="nb nav-item"
-                  onClick={() => { router.push(route); setSidebarOpen(false); }}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
-                    borderRadius: 10, color: active ? gold : txM,
-                    background: active ? goldM : "transparent",
-                    border: `1px solid ${active ? goldB : "transparent"}`,
-                    fontSize: 13.5, fontWeight: active ? 500 : 400, textAlign: "left",
-                    position: "relative",
-                  }}>
-                  <span style={{ opacity: active ? 1 : 0.6 }}>{svg}</span>
-                  {id}
-                  {active && <div style={{ marginLeft: "auto", width: 5, height: 5, borderRadius: "50%", background: gold }} />}
-                </button>
-              );
-            })}
-
-            {/* Pipeline section */}
-            <div style={{ marginTop: 20 }}>
-              <p style={{ color: txF, fontSize: 9, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.14em", padding: "0 10px 10px" }}>Pipeline</p>
-              {Object.entries(STATUS).map(([key, cfg]) => {
-                const count = jobs.filter(j => j.status === key).length;
-                const pct = jobs.length > 0 ? (count / jobs.length) * 100 : 0;
-                return (
-                  <div key={key} style={{ padding: "7px 12px", display: "flex", flexDirection: "column", gap: 4 }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                        <div style={{ width: 6, height: 6, borderRadius: "50%", background: cfg.dot }} />
-                        <span style={{ color: txM, fontSize: 12 }}>{key}</span>
-                      </div>
-                      <span style={{ color: count > 0 ? cfg.color : txF, fontSize: 11, fontWeight: 500, fontFamily: "monospace" }}>
-                        {String(count).padStart(2, "0")}
-                      </span>
-                    </div>
-                    {/* Mini progress bar */}
-                    <div style={{ height: 2, background: `${cfg.dot}20`, borderRadius: 2 }}>
-                      <div style={{ height: "100%", width: `${pct}%`, background: cfg.dot, borderRadius: 2, transition: "width 0.5s ease" }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </nav>
-
-          {/* User card */}
-          <div style={{ padding: 12, borderTop: `1px solid ${brdSub}` }}>
-            <div style={{
-              display: "flex", alignItems: "center", gap: 10,
-              padding: "10px 12px", borderRadius: 12,
-              background: goldM, border: `1px solid ${goldB}`,
-            }}>
-              <div style={{
-                width: 30, height: 30, borderRadius: "50%", flexShrink: 0,
-                background: `linear-gradient(135deg, ${gold}, #8b6914)`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 11, fontWeight: 600, color: "#0c0b0a",
-              }}>{initials}</div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 12, fontWeight: 500, color: tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {userEmail.split("@")[0]}
-                </p>
-                <p style={{ fontSize: 10, color: txM, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {userEmail}
-                </p>
-              </div>
-              <button className="nb act-btn" onClick={handleLogout} style={{ color: txM, padding: 4, borderRadius: 6, flexShrink: 0 }}
-                onMouseEnter={e => (e.currentTarget.style.color = "#ef4444")}
-                onMouseLeave={e => (e.currentTarget.style.color = txM)}>
-                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                  <path d="M5 2H2.5A1.5 1.5 0 001 3.5v6A1.5 1.5 0 002.5 11H5M9 9.5L12 6.5 9 3.5M12 6.5H5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-          </div>{/* end sidebar-el-inner */}
-        </aside>
+        <DashboardSidebar
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+          userEmail={userEmail}
+          jobs={jobs}
+          dark={dark}
+          gold={gold}
+          goldM={goldM}
+          goldB={goldB}
+          bgS={bgS}
+          brd={brd}
+          brdSub={brdSub}
+          tx={tx}
+          txM={txM}
+          txF={txF}
+          onLogout={handleLogout}
+        />
 
         {/* ════════════════ MAIN ════════════════ */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
           <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
 
             {/* ── TOPBAR ── */}
-            <header style={{
-              height: 58, display: "flex", alignItems: "center", justifyContent: "space-between",
-              padding: "0 28px", position: "sticky", top: 0, zIndex: 10,
-              background: bgGlass, backdropFilter: "blur(20px)",
-              borderBottom: `1px solid ${brdSub}`,
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                {/* Hamburger */}
-                <button className="nb tog" onClick={() => setSidebarOpen(true)}
-                  style={{ padding: "7px 8px", borderRadius: 8, color: txM, display: "flex" }}>
-                  <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
-                    <path d="M2 4h13M2 8.5h9M2 13h13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                  </svg>
-                </button>
-
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 19, fontWeight: 400, color: tx, letterSpacing: "0.01em" }}>
-                    {activeNav}
-                  </h1>
-                  <span className="sm-show" style={{ color: txF, fontSize: 12 }}>
-                    {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
-                  </span>
-                </div>
-              </div>
-
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                {/* Theme toggle */}
-                <button className="nb tog" onClick={() => setDark(!dark)}
-                  style={{ width: 34, height: 34, borderRadius: "50%", border: `1px solid ${brd}`, color: txM, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  {dark
-                    ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="1.6"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M17.66 6.34l-1.41 1.41M4.93 19.07l1.41-1.41" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
-                    : <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  }
-                </button>
-
-                {/* Add button */}
-                <button className="nb btn-g" onClick={() => { resetForm(); setShowModal(true); }}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 7,
-                    padding: "9px 18px", borderRadius: 11,
-                    background: `linear-gradient(135deg, ${gold}, ${dark ? "#a07820" : "#7a5a10"})`,
-                    color: "#0c0b0a", fontSize: 13, fontWeight: 600,
-                    boxShadow: `0 4px 20px ${goldM}`,
-                    letterSpacing: "0.02em",
-                  }}>
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M6 1v10M1 6h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                  <span>Add<span className="sm-show"> Application</span></span>
-                </button>
-              </div>
-            </header>
+            <DashboardTopbar
+              title="Dashboard"
+              setSidebarOpen={setSidebarOpen}
+              dark={dark}
+              setDark={setDark}
+              onAddClick={() => { resetForm(); setShowModal(true); }}
+              bgGlass={bgGlass}
+              brdSub={brdSub}
+              tx={tx}
+              txM={txM}
+              gold={gold}
+              goldM={goldM}
+            />
 
             {/* ── BODY ── */}
             <main style={{ flex: 1, padding: "28px 28px 48px", display: "flex", flexDirection: "column", gap: 28, overflowY: "auto" }}>
@@ -457,7 +284,7 @@ export default function Dashboard() {
               {/* ── STATS ROW ── */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
                 <style>{`@media(max-width:900px){.stats-grid{grid-template-columns:repeat(2,1fr)!important;}}@media(max-width:480px){.stats-grid{grid-template-columns:1fr 1fr!important;}}`}</style>
-                {stats.map((s, i) => {
+                {stats.map((s: typeof stats[0], i: number) => {
                   const sKey = s.label as keyof typeof STATUS;
                   const cfg = sKey in STATUS ? STATUS[sKey] : null;
                   return (
@@ -587,6 +414,25 @@ export default function Dashboard() {
                               </div>
                               {/* Actions */}
                               <div style={{ display: "flex", gap: 4, justifyContent: "flex-end" }}>
+                                
+                                <button
+                                  className="nb act-btn"
+                                  onClick={() => handleAnalyze(job)}
+                                  disabled={aiLoadingId === job.id}
+                                  style={{
+                                    color: aiLoadingId === job.id ? gold : txM,
+                                    padding: 6,
+                                    borderRadius: 7,
+                                    display: "flex",
+                                    opacity: aiLoadingId === job.id ? 0.6 : 1,
+                                  }}
+                                >
+                                  {aiLoadingId === job.id ? (
+                                    <LoadSpinner color={gold} size={14} />
+                                  ) : (
+                                    "✨"
+                                  )}
+                                </button>
                                 <button className="nb act-btn" onClick={() => openEdit(job)}
                                   style={{ color: txM, padding: 6, borderRadius: 7, display: "flex" }}
                                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = gold; (e.currentTarget as HTMLElement).style.background = goldM; }}
@@ -702,7 +548,7 @@ export default function Dashboard() {
                   </div>
                   <div>
                     <p style={{ fontSize: 14, fontWeight: 600, color: tx }}>{editJob ? "Edit Application" : "New Application"}</p>
-                    <p style={{ fontSize: 11.5, color: txM }}>{editJob ? `Editing — ${editJob.company}` : "Track a new opportunity"}</p>
+                    <p style={{ fontSize: 11.5, color: txM }}>{editJob ? `Editing — ${editJob?.company}` : "Track a new opportunity"}</p>
                   </div>
                 </div>
                 <button className="nb act-btn" onClick={() => { resetForm(); setShowModal(false); }}
@@ -729,6 +575,34 @@ export default function Dashboard() {
                     <input type="text" value={val} placeholder={ph} onChange={e => set(e.target.value)} style={inputSt} />
                   </div>
                 ))}
+
+                {/* Job Description */}
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: 10,
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.12em",
+                      color: txM,
+                      marginBottom: 7,
+                    }}
+                  >
+                    Job Description
+                  </label>
+
+                  <textarea
+                    value={jobDescription}
+                    placeholder="Paste the full job description here..."
+                    onChange={(e) => setJobDescription(e.target.value)}
+                    style={{
+                      ...inputSt,
+                      minHeight: 100,
+                      resize: "vertical",
+                    }}
+                  />
+                </div>
 
                 {/* Status grid */}
                 <div>
@@ -781,6 +655,117 @@ export default function Dashboard() {
             </div>
           </div>
         )}
+          {/* ════════════════ AI RESULT MODAL ════════════════ */}
+          {aiResult && (
+            <div
+              style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 60,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 20,
+              }}
+            >
+              {/* Overlay */}
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background: "rgba(0,0,0,0.7)",
+                  backdropFilter: "blur(10px)",
+                }}
+                onClick={() => setAiResult(null)}
+              />
+
+              {/* Modal */}
+              <div
+                className="s-up"
+                style={{
+                  position: "relative",
+                  width: "100%",
+                  maxWidth: 720,
+                  maxHeight: "85vh",
+                  overflowY: "auto",
+                  background: dark ? "#131110" : "#ffffff",
+                  border: `1px solid ${brd}`,
+                  borderRadius: 22,
+                  padding: "28px 32px",
+                  boxShadow: `0 40px 100px rgba(0,0,0,0.6), 0 0 0 1px ${goldB}`,
+                }}
+              >
+                {/* Top gold accent */}
+                <div
+                  style={{
+                    height: 3,
+                    width: "100%",
+                    background: `linear-gradient(90deg, transparent, ${gold}, transparent)`,
+                    marginBottom: 20,
+                  }}
+                />
+
+                {/* Header */}
+                <div style={{ marginBottom: 18 }}>
+                  <h2
+                    style={{
+                      fontFamily: "'Playfair Display', serif",
+                      fontSize: 24,
+                      fontWeight: 400,
+                      color: tx,
+                      marginBottom: 6,
+                    }}
+                  >
+                    AI Job Intelligence ✦
+                  </h2>
+                  <p style={{ fontSize: 12.5, color: txM }}>
+                    Generated insights from this job description
+                  </p>
+                </div>
+
+                {/* Content */}
+                <div
+                  style={{
+                    fontSize: 14,
+                    lineHeight: 1.8,
+                    color: tx,
+                    whiteSpace: "pre-wrap",
+                  }}
+                >
+                  {aiLoadingId ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <LoadSpinner color={gold} size={18} />
+                    <span style={{ color: txM, fontSize: 13 }}>
+                      Analyzing job description…
+                    </span>
+                  </div>
+                ) : (
+                  aiResult
+                )}
+                </div>
+
+                {/* Footer */}
+                <div style={{ marginTop: 28, textAlign: "right" }}>
+                  <button
+                    onClick={() => setAiResult(null)}
+                    className="nb btn-g"
+                    style={{
+                      padding: "10px 20px",
+                      borderRadius: 12,
+                      background: `linear-gradient(135deg, ${gold}, ${dark ? "#a07820" : "#7a5a10"})`,
+                      color: "#0c0b0a",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      letterSpacing: "0.02em",
+                      boxShadow: `0 4px 20px ${goldM}`,
+                    }}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
       </div>
     </>
   );
