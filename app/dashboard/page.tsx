@@ -42,6 +42,20 @@ type Job = {
 
   useEffect(() => { setMounted(true); }, []);
 
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme === "light") {
+      setDark(false);
+    } else {
+      setDark(true);
+    }
+  }, []);
+
+  const handleSetDark = (isDark: boolean) => {
+    setDark(isDark);
+    localStorage.setItem("theme", isDark ? "dark" : "light");
+  };
+
   // ✅ LOAD USER + JOBS
   useEffect(() => {
     const init = async () => {
@@ -117,30 +131,30 @@ const handleAnalyze = async (job: Job) => {
 
   const handleLogout = async () => { await supabase.auth.signOut(); router.push("/login"); };
 
-  const bg     = dark ? "#0c0b0a" : "#f4f2ef";
-  const bgS    = dark ? "#0f0e0d" : "#ede9e4";
-  const bgCard = dark ? "#141210" : "#ffffff";
-  const bgGlass= dark ? "rgba(20,18,16,0.85)" : "rgba(255,255,255,0.85)";
-  const brd    = dark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.08)";
-  const brdSub = dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.05)";
-  const tx     = dark ? "#ede9e2" : "#1c1a17";
-  const txM    = dark ? "#5a5650" : "#a09890";
-  const txF    = dark ? "#2e2c2a" : "#d4cfc9";
-  const gold   = dark ? "#c9a84c" : "#9a7318";
-  const goldM  = dark ? "rgba(201,168,76,0.12)" : "rgba(154,115,24,0.1)";
-  const goldB  = dark ? "rgba(201,168,76,0.28)" : "rgba(154,115,24,0.3)";
-  const inBg   = dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)";
-  const inBgF  = dark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
-  const rowH   = dark ? "rgba(255,255,255,0.025)" : "rgba(0,0,0,0.025)";
+  const bg     = dark ? "#1a1815" : "#f4f2ef";
+  const bgS    = dark ? "#1f1d1a" : "#ede9e4";
+  const bgCard = dark ? "#28251f" : "#ffffff";
+  const bgGlass= dark ? "rgba(40,37,31,0.85)" : "rgba(255,255,255,0.85)";
+  const brd    = dark ? "rgba(255,255,255,0.09)" : "rgba(0,0,0,0.08)";
+  const brdSub = dark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)";
+  const tx     = dark ? "#f5f1eb" : "#1c1a17";
+  const txM    = dark ? "#8a7f78" : "#a09890";
+  const txF    = dark ? "#5a5550" : "#d4cfc9";
+  const gold   = dark ? "#d4b563" : "#9a7318";
+  const goldM  = dark ? "rgba(212,181,99,0.14)" : "rgba(154,115,24,0.1)";
+  const goldB  = dark ? "rgba(212,181,99,0.32)" : "rgba(154,115,24,0.3)";
+  const inBg   = dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)";
+  const inBgF  = dark ? "rgba(255,255,255,0.09)" : "rgba(0,0,0,0.07)";
+  const rowH   = dark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.025)";
 
   const filtered = filterStatus === "All" ? jobs : jobs.filter(j => j.status === filterStatus);
   const inputSt: React.CSSProperties = { width: "100%", padding: "11px 14px", background: inBg, border: `1px solid ${brd}`, borderRadius: 10, color: tx, fontSize: 13.5, outline: "none", fontFamily: "'Outfit', sans-serif", transition: "border-color 0.2s, box-shadow 0.2s, background 0.2s" };
 
   const stats = [
-    { label: "Applied",   value: jobs.filter(j => j.status === "Applied").length,   icon: "📨", trend: "+2" },
-    { label: "Interview", value: jobs.filter(j => j.status === "Interview").length,  icon: "🎤", trend: "+1" },
-    { label: "Offers",    value: jobs.filter(j => j.status === "Offer").length,      icon: "🏆", trend: "Active" },
-    { label: "Total",     value: jobs.length,                                         icon: "📋", trend: "All time" },
+    { label: "Applied",   value: jobs.filter(j => j.status === "Applied").length,  trend: "+2" },
+    { label: "Interview", value: jobs.filter(j => j.status === "Interview").length,   trend: "+1" },
+    { label: "Offers",    value: jobs.filter(j => j.status === "Offer").length,      trend: "Active" },
+    { label: "Total",     value: jobs.length,                                        trend: "All time" },
   ];
 
   if (!mounted || loading) return (
@@ -231,7 +245,7 @@ const handleAnalyze = async (job: Job) => {
               title="Dashboard"
               setSidebarOpen={setSidebarOpen}
               dark={dark}
-              setDark={setDark}
+              setDark={handleSetDark}
               onAddClick={() => { resetForm(); setShowModal(true); }}
               bgGlass={bgGlass}
               brdSub={brdSub}
@@ -287,8 +301,14 @@ const handleAnalyze = async (job: Job) => {
                 {stats.map((s: typeof stats[0], i: number) => {
                   const sKey = s.label as keyof typeof STATUS;
                   const cfg = sKey in STATUS ? STATUS[sKey] : null;
+                  const tooltips: Record<string, string> = {
+                    "Applied": "Total number of jobs you have applied for.",
+                    "Interview": "Number of applications that progressed to interview stage.",
+                    "Offers": "Number of job offers received.",
+                    "Total": "Total number of tracked applications.",
+                  };
                   return (
-                    <div key={i} className="s-up card-hover" style={{
+                    <div key={i} className="s-up card-hover" title={tooltips[s.label] || ""} style={{
                       background: bgCard, border: `1px solid ${brd}`,
                       borderRadius: 16, padding: "20px 20px 16px",
                       animationDelay: `${i * 70}ms`, position: "relative", overflow: "hidden",
@@ -365,12 +385,12 @@ const handleAnalyze = async (job: Job) => {
                       <div style={{ background: bgCard, border: `1px solid ${brd}`, borderRadius: 18, overflow: "hidden" }}>
                         {/* Head */}
                         <div style={{
-                          display: "grid", gridTemplateColumns: "2.2fr 2fr 1.2fr 1fr 80px",
+                          display: "grid", gridTemplateColumns: "2.2fr 1.8fr 1.5fr 1.2fr 1fr 80px",
                           padding: "12px 20px", gap: 14,
                           borderBottom: `1px solid ${brdSub}`,
                           background: dark ? "rgba(255,255,255,0.015)" : "rgba(0,0,0,0.02)",
                         }}>
-                          {["Company", "Role", "Location", "Status", ""].map(h => (
+                          {["Company", "Role", "Job Description", "Location", "Status", ""].map(h => (
                             <p key={h} style={{ fontSize: 9.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.14em", color: txF }}>{h}</p>
                           ))}
                         </div>
@@ -381,7 +401,7 @@ const handleAnalyze = async (job: Job) => {
                           return (
                             <div key={job.id} className="row-hover"
                               style={{
-                                display: "grid", gridTemplateColumns: "2.2fr 2fr 1.2fr 1fr 80px",
+                                display: "grid", gridTemplateColumns: "2.2fr 1.8fr 1.5fr 1.2fr 1fr 80px",
                                 padding: "14px 20px", gap: 14, alignItems: "center",
                                 borderBottom: i < filtered.length - 1 ? `1px solid ${brdSub}` : "none",
                               }}>
@@ -397,6 +417,8 @@ const handleAnalyze = async (job: Job) => {
                               </div>
                               {/* Role */}
                               <p style={{ fontSize: 13, color: txM, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{job.role}</p>
+                              {/* Job Description */}
+                              <p style={{ fontSize: 12, color: txF, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{job.job_description ? (job.job_description.length > 60 ? job.job_description.substring(0, 60) + "..." : job.job_description) : "—"}</p>
                               {/* Location */}
                               <p style={{ fontSize: 12.5, color: txF, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{job.location || "—"}</p>
                               {/* Status */}
@@ -416,15 +438,34 @@ const handleAnalyze = async (job: Job) => {
                               <div style={{ display: "flex", gap: 4, justifyContent: "flex-end" }}>
                                 
                                 <button
-                                  className="nb act-btn"
+                                  className="nb act-btn ai-analyze-btn"
                                   onClick={() => handleAnalyze(job)}
                                   disabled={aiLoadingId === job.id}
+                                  title="Analyze this job with AI"
                                   style={{
-                                    color: aiLoadingId === job.id ? gold : txM,
-                                    padding: 6,
+                                    color: aiLoadingId === job.id ? gold : gold,
+                                    padding: "6px 10px",
                                     borderRadius: 7,
                                     display: "flex",
+                                    alignItems: "center",
+                                    gap: 6,
                                     opacity: aiLoadingId === job.id ? 0.6 : 1,
+                                    background: aiLoadingId === job.id ? goldM : "transparent",
+                                    transition: "background 0.15s, color 0.15s",
+                                    whiteSpace: "nowrap",
+                                    fontSize: 12,
+                                  }}
+                                  onMouseEnter={e => { 
+                                    if (aiLoadingId !== job.id) {
+                                      (e.currentTarget as HTMLElement).style.background = goldM;
+                                      (e.currentTarget as HTMLElement).style.color = gold;
+                                    }
+                                  }}
+                                  onMouseLeave={e => { 
+                                    if (aiLoadingId !== job.id) {
+                                      (e.currentTarget as HTMLElement).style.background = "transparent";
+                                      (e.currentTarget as HTMLElement).style.color = gold;
+                                    }
                                   }}
                                 >
                                   {aiLoadingId === job.id ? (
@@ -432,6 +473,7 @@ const handleAnalyze = async (job: Job) => {
                                   ) : (
                                     "✨"
                                   )}
+                                  <span className="dv">AI Analysis</span>
                                 </button>
                                 <button className="nb act-btn" onClick={() => openEdit(job)}
                                   style={{ color: txM, padding: 6, borderRadius: 7, display: "flex" }}

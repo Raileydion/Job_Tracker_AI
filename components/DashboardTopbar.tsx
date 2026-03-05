@@ -35,13 +35,14 @@ export default function DashboardTopbar({
       borderBottom: `1px solid ${brdSub}`,
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-        {/* Hamburger */}
-        <button className="nb tog" onClick={() => setSidebarOpen(true)}
+        {/* Hamburger - Only show on mobile/tablet */}
+        <button className="nb tog hamburger-menu" onClick={() => setSidebarOpen(true)}
           style={{ padding: "7px 8px", borderRadius: 8, color: txM, display: "flex", transition: "background 0.15s", cursor: "pointer" }}>
           <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
             <path d="M2 4h13M2 8.5h9M2 13h13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
           </svg>
         </button>
+        <style>{`@media(min-width:1024px){ .hamburger-menu { display: none !important; } }`}</style>
 
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 19, fontWeight: 400, color: tx, letterSpacing: "0.01em" }}>

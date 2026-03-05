@@ -25,7 +25,7 @@ export default function JobsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
-  const [sortBy, setSortBy] = useState<"date" | "company" | "status">("date");
+  const [sortBy, setSortBy] = useState<"date" | "company">("date");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dark, setDark] = useState(true);
   const [mounted, setMounted] = useState(false);
@@ -33,16 +33,30 @@ export default function JobsPage() {
 
   useEffect(() => { setMounted(true); }, []);
 
-  const gold   = "#c9a84c";
-  const goldM  = "rgba(201,168,76,0.11)";
-  const goldB  = "rgba(201,168,76,0.27)";
-  const bgCard = "#141210";
-  const brd    = "rgba(255,255,255,0.07)";
-  const brdSub = "rgba(255,255,255,0.04)";
-  const tx     = "#ede9e2";
-  const txM    = "#5a5650";
-  const txF    = "#2e2c2a";
-  const inBg   = "rgba(255,255,255,0.04)";
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme === "light") {
+      setDark(false);
+    } else {
+      setDark(true);
+    }
+  }, []);
+
+  const handleSetDark = (isDark: boolean) => {
+    setDark(isDark);
+    localStorage.setItem("theme", isDark ? "dark" : "light");
+  };
+
+  const gold   = dark ? "#d4b563" : "#9a7318";
+  const goldM  = dark ? "rgba(212,181,99,0.14)" : "rgba(154,115,24,0.1)";
+  const goldB  = dark ? "rgba(212,181,99,0.32)" : "rgba(154,115,24,0.3)";
+  const bgCard = dark ? "#28251f" : "#ffffff";
+  const brd    = dark ? "rgba(255,255,255,0.09)" : "rgba(0,0,0,0.08)";
+  const brdSub = dark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)";
+  const tx     = dark ? "#f5f1eb" : "#1c1a17";
+  const txM    = dark ? "#8a7f78" : "#a09890";
+  const txF    = dark ? "#5a5550" : "#d4cfc9";
+  const inBg   = dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)";
 
   useEffect(() => {
     const load = async () => {
@@ -64,7 +78,6 @@ export default function JobsPage() {
     })
     .sort((a, b) => {
       if (sortBy === "company") return a.company.localeCompare(b.company);
-      if (sortBy === "status")  return a.status.localeCompare(b.status);
       return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
     });
 
@@ -88,19 +101,19 @@ export default function JobsPage() {
 
   const theme = dark 
     ? {
-        bg: "#0c0b0a",
-        bgS: "#0f0e0d",
-        bgCard: "#141210",
-        bgGlass: "rgba(20,18,16,0.85)",
-        brd: "rgba(255,255,255,0.07)",
-        brdSub: "rgba(255,255,255,0.04)",
-        tx: "#ede9e2",
-        txM: "#5a5650",
-        txF: "#2e2c2a",
-        gold: "#c9a84c",
-        goldM: "rgba(201,168,76,0.12)",
-        goldB: "rgba(201,168,76,0.28)",
-        inBg: "rgba(255,255,255,0.04)",
+        bg: "#1a1815",
+        bgS: "#1f1d1a",
+        bgCard: "#28251f",
+        bgGlass: "rgba(40,37,31,0.85)",
+        brd: "rgba(255,255,255,0.09)",
+        brdSub: "rgba(255,255,255,0.05)",
+        tx: "#f5f1eb",
+        txM: "#8a7f78",
+        txF: "#5a5550",
+        gold: "#d4b563",
+        goldM: "rgba(212,181,99,0.14)",
+        goldB: "rgba(212,181,99,0.32)",
+        inBg: "rgba(255,255,255,0.06)",
       }
     : {
         bg: "#f4f2ef",
@@ -181,7 +194,7 @@ export default function JobsPage() {
             title="Jobs"
             setSidebarOpen={setSidebarOpen}
             dark={dark}
-            setDark={setDark}
+            setDark={handleSetDark}
             bgGlass={bgGlass}
             brdSub={theme.brdSub}
             tx={theme.tx}
@@ -236,7 +249,7 @@ export default function JobsPage() {
               {/* Sort */}
               <div style={{ display: "flex", gap: 4, marginLeft: "auto", alignItems: "center" }}>
                 <span style={{ fontSize: 11, color: theme.txF, marginRight: 4 }}>Sort:</span>
-                {(["date", "company", "status"] as const).map(s => (
+                {(["date", "company"] as const).map(s => (
                   <button key={s} className="nb sb"
                     onClick={() => setSortBy(s)}
                     style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: sortBy === s ? theme.goldM : "transparent", color: sortBy === s ? theme.gold : theme.txM, fontSize: 12, fontFamily: "'Outfit', sans-serif", textTransform: "capitalize" }}>
@@ -263,8 +276,8 @@ export default function JobsPage() {
                 <div className="dv" style={{ display: "none" }}>
                   <div style={{ background: theme.bgCard, border: `1px solid ${theme.brd}`, borderRadius: 18, overflow: "hidden" }}>
                     {/* Head */}
-                    <div style={{ display: "grid", gridTemplateColumns: "2.2fr 2fr 1.2fr 1fr 90px 40px", padding: "11px 20px", gap: 14, borderBottom: `1px solid ${theme.brdSub}`, background: dark ? "rgba(255,255,255,0.015)" : "rgba(0,0,0,0.02)" }}>
-                      {["Company", "Role", "Location", "Status", "Added", ""].map(h => (
+                    <div style={{ display: "grid", gridTemplateColumns: "2.2fr 1.5fr 1.8fr 1.2fr 1fr 90px 40px", padding: "11px 20px", gap: 14, borderBottom: `1px solid ${theme.brdSub}`, background: dark ? "rgba(255,255,255,0.015)" : "rgba(0,0,0,0.02)" }}>
+                      {["Company", "Role", "Job Description", "Location", "Status", "Added", ""].map(h => (
                         <p key={h} style={{ fontSize: 9.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.14em", color: theme.txF }}>{h}</p>
                       ))}
                     </div>
@@ -273,12 +286,13 @@ export default function JobsPage() {
                       const isExpanded = expandedJobs.has(job.id);
                       return (
                         <div key={job.id}>
-                          <div className="s-up row-hover" style={{ display: "grid", gridTemplateColumns: "2.2fr 2fr 1.2fr 1fr 90px 40px", padding: "15px 20px", gap: 14, alignItems: "center", borderBottom: `1px solid ${theme.brdSub}`, animationDelay: `${i * 30}ms` }}>
+                          <div className="s-up row-hover" style={{ display: "grid", gridTemplateColumns: "2.2fr 1.5fr 1.8fr 1.2fr 1fr 90px 40px", padding: "15px 20px", gap: 14, alignItems: "center", borderBottom: `1px solid ${theme.brdSub}`, animationDelay: `${i * 30}ms` }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                               <Avatar name={job.company} size={34} />
                               <p style={{ fontSize: 13.5, fontWeight: 500, color: theme.tx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{job.company}</p>
                             </div>
                             <p style={{ fontSize: 13, color: theme.txM, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{job.role}</p>
+                            <p style={{ fontSize: 12, color: theme.txF, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{job.job_description ? (job.job_description.length > 70 ? job.job_description.substring(0, 70) + "..." : job.job_description) : "—"}</p>
                             <p style={{ fontSize: 12.5, color: theme.txF, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{job.location || "—"}</p>
                             <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 100, background: cfg.bg, border: `1px solid ${cfg.border}`, color: cfg.color, fontSize: 11.5, fontWeight: 500 }}>
                               <div style={{ width: 5, height: 5, borderRadius: "50%", background: cfg.dot }} />
@@ -300,10 +314,9 @@ export default function JobsPage() {
                             </button>
                           </div>
                           {isExpanded && job.job_description && (
-                            <div style={{ padding: "0 20px 16px", borderBottom: `1px solid ${theme.brdSub}`, background: dark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.01)" }}>
-                              <div style={{ padding: "12px 16px", background: theme.bgCard, borderRadius: 10, border: `1px solid ${theme.brdSub}` }}>
-                                <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: theme.txF, marginBottom: 8 }}>Job Description</p>
-                                <p style={{ fontSize: 13, color: theme.txM, lineHeight: 1.6, whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 300, overflowY: "auto" }}>
+                            <div style={{ padding: "12px 20px 0", borderTop: `1px solid ${theme.brdSub}`, background: "transparent" }}>
+                              <div style={{ padding: "12px 14px 12px", background: dark ? "rgba(212,181,99,0.08)" : "rgba(212,181,99,0.05)", borderRadius: 8, border: `1px solid ${dark ? "rgba(212,181,99,0.15)" : "rgba(212,181,99,0.12)"}`, marginBottom: 12 }}>
+                                <p style={{ fontSize: 11.5, color: theme.txM, lineHeight: 1.5, whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 200, overflowY: "auto" }}>
                                   {job.job_description}
                                 </p>
                               </div>

@@ -8,10 +8,31 @@ import Link from "next/link";
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [dark, setDark] = useState(true);
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotMessage, setForgotMessage] = useState("");
+  const [forgotError, setForgotError] = useState("");
   const router = useRouter();
+
+  // Load theme preference from localStorage on mount
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme === "light") {
+      setDark(false);
+    } else {
+      setDark(true);
+    }
+  }, []);
+
+  const handleSetDark = (isDark: boolean) => {
+    setDark(isDark);
+    localStorage.setItem("theme", isDark ? "dark" : "light");
+  };
 
   const handleLogin = async () => {
     setError("");
@@ -22,6 +43,34 @@ export default function LoginPage() {
     else router.push("/dashboard");
   };
 
+  const handleForgotPassword = async () => {
+    setForgotError("");
+    setForgotMessage("");
+    
+    if (!forgotEmail) {
+      setForgotError("Please enter your email address.");
+      return;
+    }
+
+    setForgotLoading(true);
+    const redirectUrl = `${window.location.origin}/reset-password`;
+    const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+      redirectTo: redirectUrl,
+    });
+    setForgotLoading(false);
+
+    if (error) {
+      setForgotError(error.message);
+    } else {
+      setForgotMessage("Password reset link sent! Check your email.");
+      setTimeout(() => {
+        setShowForgotModal(false);
+        setForgotEmail("");
+        setForgotMessage("");
+      }, 2500);
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") handleLogin();
   };
@@ -29,22 +78,22 @@ export default function LoginPage() {
   // CSS variables driven by dark/light
   const t = dark
     ? {
-        bg: "#0f0e0d",
-        bgCard: "#161513",
-        border: "rgba(255,255,255,0.07)",
-        borderStrong: "rgba(255,255,255,0.12)",
-        text: "#f5f0eb",
-        textMuted: "#6b6560",
-        textSub: "#9b9490",
-        inputBg: "rgba(255,255,255,0.04)",
-        inputBgFocus: "rgba(255,255,255,0.07)",
-        accent: "#c9a84c",
-        accentMuted: "rgba(201,168,76,0.12)",
-        accentBorder: "rgba(201,168,76,0.3)",
-        shadow: "0 32px 80px rgba(0,0,0,0.6)",
-        errorBg: "rgba(239,68,68,0.08)",
-        errorBorder: "rgba(239,68,68,0.2)",
-        toggleBg: "rgba(255,255,255,0.06)",
+        bg: "#1a1815",
+        bgCard: "#28251f",
+        border: "rgba(255,255,255,0.09)",
+        borderStrong: "rgba(255,255,255,0.13)",
+        text: "#f5f1eb",
+        textMuted: "#8a7f78",
+        textSub: "#a89f96",
+        inputBg: "rgba(255,255,255,0.05)",
+        inputBgFocus: "rgba(255,255,255,0.08)",
+        accent: "#d4b563",
+        accentMuted: "rgba(212,181,99,0.14)",
+        accentBorder: "rgba(212,181,99,0.35)",
+        shadow: "0 32px 80px rgba(0,0,0,0.4)",
+        errorBg: "rgba(239,68,68,0.1)",
+        errorBorder: "rgba(239,68,68,0.25)",
+        toggleBg: "rgba(255,255,255,0.07)",
       }
     : {
         bg: "#f7f5f2",
@@ -96,7 +145,7 @@ export default function LoginPage() {
 
         {/* Theme toggle */}
         <button
-          onClick={() => setDark(!dark)}
+          onClick={() => handleSetDark(!dark)}
           className="toggle-btn"
           style={{
             position: "fixed", top: "24px", right: "24px",
@@ -136,7 +185,7 @@ export default function LoginPage() {
               </svg>
             </div>
             <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "22px", fontWeight: 500, color: t.text, letterSpacing: "0.04em" }}>
-              Trackr
+              Aurevia AI
             </p>
           </div>
 
@@ -153,7 +202,7 @@ export default function LoginPage() {
                 Welcome back
               </h1>
               <p style={{ color: t.textMuted, fontSize: "13.5px", fontWeight: 300 }}>
-                Sign in to continue your job search
+                Your golden path to career success
               </p>
             </div>
 
@@ -198,37 +247,70 @@ export default function LoginPage() {
                   <label style={{ color: t.textSub, fontSize: "10.5px", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.12em" }}>
                     Password
                   </label>
-                  <a href="#" className="link-hover" style={{ color: t.textMuted, fontSize: "12px" }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotModal(true)}
+                    className="link-hover"
+                    style={{ background: "none", border: "none", color: t.textMuted, fontSize: "12px", cursor: "pointer", padding: 0 }}
+                  >
                     Forgot?
-                  </a>
+                  </button>
                 </div>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="••••••••"
-                  className="auth-input"
-                  style={{
-                    width: "100%", padding: "13px 16px",
-                    background: t.inputBg,
-                    border: `1px solid ${t.border}`,
-                    borderRadius: "12px",
-                    color: t.text, fontSize: "14px",
-                    outline: "none",
-                    fontFamily: "'DM Sans', sans-serif",
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = t.accentBorder;
-                    e.target.style.boxShadow = `0 0 0 3px ${t.accentMuted}`;
-                    e.target.style.background = t.inputBgFocus;
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = t.border;
-                    e.target.style.boxShadow = "none";
-                    e.target.style.background = t.inputBg;
-                  }}
-                />
+                <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="••••••••"
+                    className="auth-input"
+                    style={{
+                      width: "100%", padding: "13px 16px 13px 16px", paddingRight: "42px",
+                      background: t.inputBg,
+                      border: `1px solid ${t.border}`,
+                      borderRadius: "12px",
+                      color: t.text, fontSize: "14px",
+                      outline: "none",
+                      fontFamily: "'DM Sans', sans-serif",
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = t.accentBorder;
+                      e.target.style.boxShadow = `0 0 0 3px ${t.accentMuted}`;
+                      e.target.style.background = t.inputBgFocus;
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = t.border;
+                      e.target.style.boxShadow = "none";
+                      e.target.style.background = t.inputBg;
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="toggle-btn"
+                    style={{
+                      position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)",
+                      background: "none", border: "none", color: t.textMuted, cursor: "pointer",
+                      padding: "4px 6px", display: "flex", alignItems: "center", justifyContent: "center",
+                      transition: "color 0.2s",
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = t.textSub; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = t.textMuted; }}
+                    title={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.5"/>
+                      </svg>
+                    ) : (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        <line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    )}
+                  </button>
+                </div>
               </div>
 
               {/* Error */}
@@ -288,9 +370,104 @@ export default function LoginPage() {
 
           {/* Footer line */}
           <p style={{ textAlign: "center", marginTop: "32px", color: t.textMuted, fontSize: "11.5px", letterSpacing: "0.05em" }}>
-            TRACKR · JOB INTELLIGENCE
+            AUREVIA AI · CAREER INTELLIGENCE
           </p>
         </div>
+
+        {/* Forgot Password Modal */}
+        {showForgotModal && (
+          <>
+            <div
+              style={{
+                position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)",
+                backdropFilter: "blur(8px)", zIndex: 40, display: "flex",
+                alignItems: "center", justifyContent: "center", padding: "24px",
+              }}
+              onClick={() => setShowForgotModal(false)}
+            />
+            <div
+              style={{
+                position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
+                zIndex: 50, background: t.bgCard, border: `1px solid ${t.border}`,
+                borderRadius: "20px", padding: "40px", boxShadow: t.shadow,
+                width: "100%", maxWidth: "400px", animation: "slideUp 0.3s ease",
+              }}
+            >
+              <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "26px", fontWeight: 400, color: t.text, marginBottom: "8px" }}>
+                Reset password
+              </h2>
+              <p style={{ color: t.textMuted, fontSize: "13px", marginBottom: "24px" }}>
+                Enter your email and we'll send you a password reset link
+              </p>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <input
+                  type="email"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  style={{
+                    width: "100%", padding: "12px 14px", background: t.inputBg,
+                    border: `1px solid ${t.border}`, borderRadius: "10px",
+                    color: t.text, fontSize: "14px", outline: "none",
+                    fontFamily: "'DM Sans', sans-serif",
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = t.accentBorder;
+                    e.target.style.boxShadow = `0 0 0 3px ${t.accentMuted}`;
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = t.border;
+                    e.target.style.boxShadow = "none";
+                  }}
+                />
+
+                {forgotError && (
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 12px", borderRadius: "10px", background: t.errorBg, border: `1px solid ${t.errorBorder}` }}>
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
+                      <circle cx="7" cy="7" r="6" stroke="#ef4444" strokeWidth="1.3" />
+                      <path d="M7 4v3M7 9v.5" stroke="#ef4444" strokeWidth="1.3" strokeLinecap="round" />
+                    </svg>
+                    <p style={{ color: "#ef4444", fontSize: "12px" }}>{forgotError}</p>
+                  </div>
+                )}
+
+                {forgotMessage && (
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 12px", borderRadius: "10px", background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.3)" }}>
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
+                      <path d="M3 7l2.5 2.5L11 4" stroke="#10b981" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    <p style={{ color: "#10b981", fontSize: "12px" }}>{forgotMessage}</p>
+                  </div>
+                )}
+
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <button
+                    onClick={handleForgotPassword}
+                    disabled={forgotLoading}
+                    style={{
+                      flex: 1, padding: "12px", background: t.accent, border: "none",
+                      borderRadius: "10px", color: "#0f0e0d", fontSize: "13px", fontWeight: 500,
+                      cursor: forgotLoading ? "not-allowed" : "pointer", opacity: forgotLoading ? 0.6 : 1,
+                    }}
+                  >
+                    {forgotLoading ? "Sending..." : "Send Reset Link"}
+                  </button>
+                  <button
+                    onClick={() => setShowForgotModal(false)}
+                    style={{
+                      flex: 1, padding: "12px", background: "transparent", border: `1px solid ${t.border}`,
+                      borderRadius: "10px", color: t.text, fontSize: "13px", fontWeight: 500,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </>
   );

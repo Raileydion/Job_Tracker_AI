@@ -5,45 +5,60 @@ import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-export default function SignupPage() {
-  const [email, setEmail] = useState("");
+export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [dark, setDark] = useState(true);
+  const [success, setSuccess] = useState(false);
   const router = useRouter();
 
-  const handleSignup = async () => {
+  // Check if user is authenticated (from reset email)
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
+        setError("Invalid reset link. Please request a new password reset.");
+      }
+    };
+    checkAuth();
+  }, []);
+
+  const handleResetPassword = async () => {
     setError("");
-    if (!email || !password) { setError("Please fill in all fields."); return; }
-    if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
-    if (!agreeTerms) { setError("You must agree to the Terms and Conditions."); return; }
+    
+    if (!password || !confirmPassword) {
+      setError("Please fill in all fields.");
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
     setLoading(true);
-    const { error } = await supabase.auth.signUp({ email, password });
+    const { error } = await supabase.auth.updateUser({ password });
     setLoading(false);
-    if (error) setError(error.message);
-    else { setSuccess(true); setTimeout(() => router.push("/login"), 2500); }
+
+    if (error) {
+      setError(error.message);
+    } else {
+      setSuccess(true);
+      setTimeout(() => router.push("/login"), 2500);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") handleSignup();
-  };
-
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("theme");
-    if (savedTheme === "light") {
-      setDark(false);
-    } else {
-      setDark(true);
-    }
-  }, []);
-
-  const handleSetDark = (isDark: boolean) => {
-    setDark(isDark);
-    localStorage.setItem("theme", isDark ? "dark" : "light");
+    if (e.key === "Enter") handleResetPassword();
   };
 
   const t = dark
@@ -55,7 +70,7 @@ export default function SignupPage() {
         shadow: "0 32px 80px rgba(0,0,0,0.4)",
         errorBg: "rgba(239,68,68,0.1)", errorBorder: "rgba(239,68,68,0.25)",
         toggleBg: "rgba(255,255,255,0.07)",
-        strengthOff: "rgba(255,255,255,0.09)",
+        successBg: "rgba(16,185,129,0.1)", successBorder: "rgba(16,185,129,0.3)",
       }
     : {
         bg: "#f7f5f2", bgCard: "#ffffff", border: "rgba(0,0,0,0.07)",
@@ -65,13 +80,8 @@ export default function SignupPage() {
         shadow: "0 32px 80px rgba(0,0,0,0.1)",
         errorBg: "rgba(239,68,68,0.05)", errorBorder: "rgba(239,68,68,0.2)",
         toggleBg: "rgba(0,0,0,0.06)",
-        strengthOff: "rgba(0,0,0,0.08)",
-        strengthOff: "rgba(0,0,0,0.08)",
+        successBg: "rgba(16,185,129,0.08)", successBorder: "rgba(16,185,129,0.2)",
       };
-
-  const strengthLevel = password.length === 0 ? 0 : password.length < 6 ? 1 : password.length < 10 ? 2 : password.length < 14 ? 3 : 4;
-  const strengthColor = strengthLevel <= 1 ? "#ef4444" : strengthLevel === 2 ? "#f59e0b" : strengthLevel === 3 ? "#84cc16" : "#10b981";
-  const strengthLabel = ["", "Weak", "Fair", "Good", "Strong"][strengthLevel];
 
   if (success) {
     return (
@@ -88,8 +98,8 @@ export default function SignupPage() {
                 <path d="M5 12l5 5L19 7" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
-            <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "26px", fontWeight: 400, color: t.text, marginBottom: "8px" }}>Account created</h2>
-            <p style={{ color: t.textMuted, fontSize: "13.5px" }}>Redirecting you to sign in…</p>
+            <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "26px", fontWeight: 400, color: t.text, marginBottom: "8px" }}>Password reset</h2>
+            <p style={{ color: t.textMuted, fontSize: "13.5px" }}>Your password has been successfully updated. Redirecting to login…</p>
           </div>
         </div>
       </>
@@ -111,13 +121,12 @@ export default function SignupPage() {
         .auth-input { transition: border-color 0.2s, box-shadow 0.2s, background 0.2s; }
         .auth-input::placeholder { color: ${t.textMuted}; }
         .auth-btn { transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s; }
-        .auth-btn:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 8px 32px rgba(201,168,76,0.4) !important; }
+        .auth-btn:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 8px 32px rgba(212,181,99,0.4) !important; }
         .auth-btn:active:not(:disabled) { transform: translateY(0); }
         .toggle-btn { transition: background 0.2s; }
         .toggle-btn:hover { background: ${t.toggleBg} !important; }
         @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
         .fade-in { animation: fadeIn 0.5s ease both; }
-        @keyframes spin { to { transform: rotate(360deg); } }
         .link-hover { transition: color 0.15s; }
         .link-hover:hover { color: ${t.accent} !important; }
       `}</style>
@@ -127,12 +136,12 @@ export default function SignupPage() {
         <div style={{
           position: "absolute", inset: 0, pointerEvents: "none",
           backgroundImage: dark
-            ? "radial-gradient(ellipse 60% 50% at 80% 20%, rgba(201,168,76,0.04) 0%, transparent 70%)"
-            : "radial-gradient(ellipse 60% 50% at 80% 20%, rgba(184,148,46,0.05) 0%, transparent 70%)",
+            ? "radial-gradient(ellipse 60% 50% at 20% 20%, rgba(212,181,99,0.04) 0%, transparent 70%)"
+            : "radial-gradient(ellipse 60% 50% at 20% 20%, rgba(184,148,46,0.05) 0%, transparent 70%)",
         }} />
 
         {/* Theme toggle */}
-        <button onClick={() => handleSetDark(!dark)} className="toggle-btn" style={{
+        <button onClick={() => setDark(!dark)} className="toggle-btn" style={{
           position: "fixed", top: "24px", right: "24px",
           width: "38px", height: "38px", borderRadius: "50%",
           border: `1px solid ${t.border}`, background: t.toggleBg,
@@ -173,78 +182,59 @@ export default function SignupPage() {
           <div style={{ background: t.bgCard, border: `1px solid ${t.border}`, borderRadius: "20px", padding: "40px", boxShadow: t.shadow }}>
             <div style={{ marginBottom: "32px" }}>
               <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "30px", fontWeight: 400, color: t.text, letterSpacing: "0.01em", lineHeight: 1.2, marginBottom: "8px" }}>
-                Start your journey
+                Reset password
               </h1>
               <p style={{ color: t.textMuted, fontSize: "13.5px", fontWeight: 300 }}>
-                Begin tracking your career journey
+                Enter your new password below
               </p>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
 
-              {/* Email */}
-              <div>
-                <label style={{ display: "block", color: t.textSub, fontSize: "10.5px", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "8px" }}>Email</label>
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={handleKeyDown}
-                  placeholder="you@example.com" className="auth-input" style={inputShared}
-                  onFocus={(e) => { e.target.style.borderColor = t.accentBorder; e.target.style.boxShadow = `0 0 0 3px ${t.accentMuted}`; e.target.style.background = t.inputBgFocus; }}
-                  onBlur={(e) => { e.target.style.borderColor = t.border; e.target.style.boxShadow = "none"; e.target.style.background = t.inputBg; }}
-                />
-              </div>
-
               {/* Password */}
               <div>
-                <label style={{ display: "block", color: t.textSub, fontSize: "10.5px", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "8px" }}>Password</label>
+                <label style={{ display: "block", color: t.textSub, fontSize: "10.5px", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "8px" }}>New Password</label>
                 <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
                   <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={handleKeyDown}
                     placeholder="Min. 6 characters" className="auth-input" style={{ ...inputShared, paddingRight: "42px" }}
                     onFocus={(e) => { e.target.style.borderColor = t.accentBorder; e.target.style.boxShadow = `0 0 0 3px ${t.accentMuted}`; e.target.style.background = t.inputBgFocus; }}
                     onBlur={(e) => { e.target.style.borderColor = t.border; e.target.style.boxShadow = "none"; e.target.style.background = t.inputBg; }}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="toggle-btn"
-                    style={{
-                      position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)",
-                      background: "none", border: "none", color: t.textMuted, cursor: "pointer",
-                      padding: "4px 6px", display: "flex", alignItems: "center", justifyContent: "center",
-                      transition: "color 0.2s",
-                    }}
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="toggle-btn"
+                    style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: t.textMuted, cursor: "pointer", padding: "4px 6px", display: "flex", alignItems: "center", justifyContent: "center", transition: "color 0.2s" }}
                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = t.textSub; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = t.textMuted; }}
-                    title={showPassword ? "Hide password" : "Show password"}
-                  >
+                    title={showPassword ? "Hide password" : "Show password"}>
                     {showPassword ? (
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.5"/>
-                      </svg>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.5"/></svg>
                     ) : (
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        <line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     )}
                   </button>
                 </div>
-                {/* Strength bar */}
-                {password.length > 0 && (
-                  <div style={{ marginTop: "10px", display: "flex", alignItems: "center", gap: "8px" }}>
-                    <div style={{ flex: 1, display: "flex", gap: "4px" }}>
-                      {[1, 2, 3, 4].map((i) => (
-                        <div key={i} style={{
-                          flex: 1, height: "2px", borderRadius: "2px",
-                          background: i <= strengthLevel ? strengthColor : t.strengthOff,
-                          transition: "background 0.3s",
-                        }} />
-                      ))}
-                    </div>
-                    <span style={{ color: strengthLevel > 0 ? strengthColor : t.textMuted, fontSize: "11px", fontWeight: 500, minWidth: "32px" }}>
-                      {strengthLabel}
-                    </span>
-                  </div>
-                )}
+              </div>
+
+              {/* Confirm Password */}
+              <div>
+                <label style={{ display: "block", color: t.textSub, fontSize: "10.5px", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "8px" }}>Confirm Password</label>
+                <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                  <input type={showConfirmPassword ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} onKeyDown={handleKeyDown}
+                    placeholder="Confirm password" className="auth-input" style={{ ...inputShared, paddingRight: "42px" }}
+                    onFocus={(e) => { e.target.style.borderColor = t.accentBorder; e.target.style.boxShadow = `0 0 0 3px ${t.accentMuted}`; e.target.style.background = t.inputBgFocus; }}
+                    onBlur={(e) => { e.target.style.borderColor = t.border; e.target.style.boxShadow = "none"; e.target.style.background = t.inputBg; }}
+                  />
+                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="toggle-btn"
+                    style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: t.textMuted, cursor: "pointer", padding: "4px 6px", display: "flex", alignItems: "center", justifyContent: "center", transition: "color 0.2s" }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = t.textSub; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = t.textMuted; }}
+                    title={showConfirmPassword ? "Hide password" : "Show password"}>
+                    {showConfirmPassword ? (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.5"/></svg>
+                    ) : (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    )}
+                  </button>
+                </div>
               </div>
 
               {/* Error */}
@@ -258,66 +248,32 @@ export default function SignupPage() {
                 </div>
               )}
 
-              {/* Terms and Conditions */}
-              <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
-                <input
-                  type="checkbox"
-                  id="agree-terms"
-                  checked={agreeTerms}
-                  onChange={(e) => setAgreeTerms(e.target.checked)}
-                  style={{
-                    marginTop: "4px", width: "18px", height: "18px", cursor: "pointer",
-                    accentColor: t.accent,
-                  }}
-                />
-                <label htmlFor="agree-terms" style={{ color: t.textMuted, fontSize: "13px", cursor: "pointer", lineHeight: 1.4 }}>
-                  I agree to the{" "}
-                  <a href="#" style={{ color: t.accent, textDecoration: "none" }} onClick={(e) => { e.preventDefault(); window.open("#", "_blank"); }}>
-                    Terms and Conditions
-                  </a>
-                  {" "}and{" "}
-                  <a href="#" style={{ color: t.accent, textDecoration: "none" }} onClick={(e) => { e.preventDefault(); window.open("#", "_blank"); }}>
-                    Privacy Policy
-                  </a>
-                </label>
-              </div>
-
               {/* Button */}
-              <button onClick={handleSignup} disabled={loading || !agreeTerms} className="auth-btn" style={{
-                width: "100%", padding: "14px",
-                background: t.accent, border: "none", borderRadius: "12px",
-                color: "#0f0e0d", fontSize: "13.5px", fontWeight: 500,
-                cursor: loading || !agreeTerms ? "not-allowed" : "pointer",
-                opacity: loading || !agreeTerms ? 0.6 : 1,
-                fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.04em",
-                boxShadow: "0 4px 20px rgba(201,168,76,0.25)",
-              }}>
+              <button onClick={handleResetPassword} disabled={loading} className="auth-btn"
+                style={{ width: "100%", padding: "14px", background: t.accent, border: "none", borderRadius: "12px", color: "#0f0e0d", fontSize: "13.5px", fontWeight: 500, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.6 : 1, fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.04em", boxShadow: `0 4px 20px rgba(212,181,99,0.25)` }}>
                 {loading ? (
                   <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ animation: "spin 0.8s linear infinite" }}>
+                    <svg className="spin" width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ animation: "spin 0.8s linear infinite" }}>
                       <circle cx="7" cy="7" r="5" stroke="rgba(15,14,13,0.3)" strokeWidth="2" />
                       <path d="M7 2a5 5 0 015 5" stroke="#0f0e0d" strokeWidth="2" strokeLinecap="round" />
                     </svg>
-                    Creating account…
+                    Resetting...
                   </span>
-                ) : "Create account"}
+                ) : "Reset Password"}
               </button>
 
-              <p style={{ color: t.textMuted, fontSize: "11.5px", textAlign: "center" }}>
-                By continuing you agree to our{" "}
-                <a href="#" className="link-hover" style={{ color: t.textSub }}>Terms</a>{" "}and{" "}
-                <a href="#" className="link-hover" style={{ color: t.textSub }}>Privacy</a>
+              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
+              <p style={{ textAlign: "center", color: t.textMuted, fontSize: "13px" }}>
+                Remember your password?{" "}
+                <Link href="/login" className="link-hover" style={{ color: t.accent, fontWeight: 500 }}>
+                  Sign in
+                </Link>
               </p>
             </div>
-
-            <p style={{ textAlign: "center", color: t.textMuted, fontSize: "13px", marginTop: "28px" }}>
-              Already have an account?{" "}
-              <Link href="/login" className="link-hover" style={{ color: t.accent, fontWeight: 500 }}>
-                Sign in
-              </Link>
-            </p>
           </div>
 
+          {/* Footer line */}
           <p style={{ textAlign: "center", marginTop: "32px", color: t.textMuted, fontSize: "11.5px", letterSpacing: "0.05em" }}>
             AUREVIA AI · CAREER INTELLIGENCE
           </p>

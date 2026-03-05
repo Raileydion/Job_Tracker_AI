@@ -55,14 +55,28 @@ export default function AnalyticsPage() {
 
   useEffect(() => { setMounted(true); }, []);
 
-  const gold   = "#c9a84c";
-  const goldM  = "rgba(201,168,76,0.11)";
-  const goldB  = "rgba(201,168,76,0.27)";
-  const bgCard = "#141210";
-  const brd    = "rgba(255,255,255,0.07)";
-  const tx     = "#ede9e2";
-  const txM    = "#5a5650";
-  const txF    = "#2e2c2a";
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme === "light") {
+      setDark(false);
+    } else {
+      setDark(true);
+    }
+  }, []);
+
+  const handleSetDark = (isDark: boolean) => {
+    setDark(isDark);
+    localStorage.setItem("theme", isDark ? "dark" : "light");
+  };
+
+  const gold   = dark ? "#d4b563" : "#9a7318";
+  const goldM  = dark ? "rgba(212,181,99,0.14)" : "rgba(154,115,24,0.1)";
+  const goldB  = dark ? "rgba(212,181,99,0.32)" : "rgba(154,115,24,0.3)";
+  const bgCard = dark ? "#28251f" : "#ffffff";
+  const brd    = dark ? "rgba(255,255,255,0.09)" : "rgba(0,0,0,0.08)";
+  const tx     = dark ? "#f5f1eb" : "#1c1a17";
+  const txM    = dark ? "#8a7f78" : "#a09890";
+  const txF    = dark ? "#5a5550" : "#d4cfc9";
 
   useEffect(() => {
     const load = async () => {
@@ -109,18 +123,18 @@ export default function AnalyticsPage() {
 
   const theme = dark 
     ? {
-        bg: "#0c0b0a",
-        bgS: "#0f0e0d",
-        bgCard: "#141210",
-        bgGlass: "rgba(20,18,16,0.85)",
-        brd: "rgba(255,255,255,0.07)",
-        brdSub: "rgba(255,255,255,0.04)",
-        tx: "#ede9e2",
-        txM: "#5a5650",
-        txF: "#2e2c2a",
-        gold: "#c9a84c",
-        goldM: "rgba(201,168,76,0.12)",
-        goldB: "rgba(201,168,76,0.28)",
+        bg: "#1a1815",
+        bgS: "#1f1d1a",
+        bgCard: "#28251f",
+        bgGlass: "rgba(40,37,31,0.85)",
+        brd: "rgba(255,255,255,0.09)",
+        brdSub: "rgba(255,255,255,0.05)",
+        tx: "#f5f1eb",
+        txM: "#8a7f78",
+        txF: "#5a5550",
+        gold: "#d4b563",
+        goldM: "rgba(212,181,99,0.14)",
+        goldB: "rgba(212,181,99,0.32)",
       }
     : {
         bg: "#f4f2ef",
@@ -203,7 +217,7 @@ export default function AnalyticsPage() {
             title="Analytics"
             setSidebarOpen={setSidebarOpen}
             dark={dark}
-            setDark={setDark}
+            setDark={handleSetDark}
             bgGlass={bgGlass}
             brdSub={theme.brdSub}
             tx={theme.tx}

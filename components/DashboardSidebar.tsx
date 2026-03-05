@@ -105,8 +105,8 @@ export default function DashboardSidebar({
                 </svg>
               </div>
               <div>
-                <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 17, fontWeight: 500, color: tx, letterSpacing: "0.02em", lineHeight: 1 }}>Trackr</p>
-                <p style={{ fontSize: 9, color: txM, letterSpacing: "0.15em", textTransform: "uppercase", marginTop: 2 }}>Job Intelligence</p>
+                <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 17, fontWeight: 500, color: tx, letterSpacing: "0.02em", lineHeight: 1 }}>Aurevia AI</p>
+                <p style={{ fontSize: 9, color: txM, letterSpacing: "0.15em", textTransform: "uppercase", marginTop: 2 }}>Career Intelligence</p>
               </div>
             </div>
           </div>
@@ -122,13 +122,13 @@ export default function DashboardSidebar({
                   onClick={() => { router.push(route); setSidebarOpen(false); }}
                   style={{
                     display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
-                    borderRadius: 10, color: active ? gold : txM,
+                    borderRadius: 10, color: active ? gold : tx,
                     background: active ? `rgba(201,168,76,0.12)` : "transparent",
                     border: `1px solid ${active ? `rgba(201,168,76,0.28)` : "transparent"}`,
                     fontSize: 13.5, fontWeight: active ? 500 : 400, textAlign: "left",
                     position: "relative", transition: "background 0.15s,color 0.15s,border-color 0.15s", cursor: "pointer",
                   }}>
-                  <span style={{ opacity: active ? 1 : 0.6 }}>{svg}</span>
+                  <span style={{ opacity: active ? 1 : 0.8 }}>{svg}</span>
                   {id}
                   {active && <div style={{ marginLeft: "auto", width: 5, height: 5, borderRadius: "50%", background: gold }} />}
                 </button>
