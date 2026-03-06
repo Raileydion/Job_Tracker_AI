@@ -66,7 +66,6 @@ export default function SignupPage() {
         errorBg: "rgba(239,68,68,0.05)", errorBorder: "rgba(239,68,68,0.2)",
         toggleBg: "rgba(0,0,0,0.06)",
         strengthOff: "rgba(0,0,0,0.08)",
-        strengthOff: "rgba(0,0,0,0.08)",
       };
 
   const strengthLevel = password.length === 0 ? 0 : password.length < 6 ? 1 : password.length < 10 ? 2 : password.length < 14 ? 3 : 4;
