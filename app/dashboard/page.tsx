@@ -102,7 +102,12 @@ const handleAnalyze = async (job: Job) => {
     const res = await fetch("/api/ai/analyze", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ description: job.job_description }),
+      body: JSON.stringify({ 
+        description: job.job_description,
+        status: job.status,
+        role: job.role,
+        company: job.company
+      }),
     });
 
     const data = await res.json();
