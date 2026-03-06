@@ -88,10 +88,10 @@ export default function AnalyticsPage() {
       setJobs(data);
       setStats({
         total:      data.length,
-        applied:    data.filter(j => j.status === "Applied").length,
-        interviews: data.filter(j => j.status === "Interview").length,
-        offers:     data.filter(j => j.status === "Offer").length,
-        rejected:   data.filter(j => j.status === "Rejected").length,
+        applied:    data.filter((j: Job) => j.status === "Applied").length,
+        interviews: data.filter((j: Job) => j.status === "Interview").length,
+        offers:     data.filter((j: Job) => j.status === "Offer").length,
+        rejected:   data.filter((j: Job) => j.status === "Rejected").length,
       });
       setLoading(false);
     };
