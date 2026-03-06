@@ -151,10 +151,10 @@ const handleAnalyze = async (job: Job) => {
   const inputSt: React.CSSProperties = { width: "100%", padding: "11px 14px", background: inBg, border: `1px solid ${brd}`, borderRadius: 10, color: tx, fontSize: 13.5, outline: "none", fontFamily: "'Outfit', sans-serif", transition: "border-color 0.2s, box-shadow 0.2s, background 0.2s" };
 
   const stats = [
-    { label: "Applied",   value: jobs.filter(j => j.status === "Applied").length,  trend: "+2" },
-    { label: "Interview", value: jobs.filter(j => j.status === "Interview").length,   trend: "+1" },
-    { label: "Offers",    value: jobs.filter(j => j.status === "Offer").length,      trend: "Active" },
-    { label: "Total",     value: jobs.length,                                        trend: "All time" },
+    { label: "Applied",   value: jobs.filter(j => j.status === "Applied").length,  trend: "+2", icon: "📤" },
+    { label: "Interview", value: jobs.filter(j => j.status === "Interview").length,   trend: "+1", icon: "🎙️" },
+    { label: "Offers",    value: jobs.filter(j => j.status === "Offer").length,      trend: "Active", icon: "🎁" },
+    { label: "Total",     value: jobs.length,                                        trend: "All time", icon: "📊" },
   ];
 
   if (!mounted || loading) return (
